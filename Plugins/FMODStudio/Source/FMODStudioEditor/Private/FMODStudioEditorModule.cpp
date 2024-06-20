@@ -1,4 +1,4 @@
-// Copyright (c), Firelight Technologies Pty, Ltd. 2012-2023.
+// Copyright (c), Firelight Technologies Pty, Ltd. 2012-2024.
 
 #include "FMODStudioEditorModule.h"
 #include "FMODStudioModule.h"
@@ -334,7 +334,7 @@ void FFMODStudioEditorModule::OnPostEngineInit()
         {
             RegisterHelpMenuEntries();
             MainMenuExtender = MakeShareable(new FExtender);
-            MainMenuExtender->AddMenuExtension("FileLoadAndSave", EExtensionHook::After, NULL,
+            MainMenuExtender->AddMenuExtension("FileOpen", EExtensionHook::After, NULL,
                 FMenuExtensionDelegate::CreateRaw(this, &FFMODStudioEditorModule::AddFileMenuExtension));
             LevelEditor->GetMenuExtensibilityManager()->AddExtender(MainMenuExtender);
         }
@@ -389,8 +389,6 @@ void FFMODStudioEditorModule::ProcessBanks()
         BankUpdateNotifier.SetFilePath(Settings.GetFullBankPath());
 
         BankUpdateNotifier.EnableUpdate(true);
-
-        IFMODStudioModule::Get().RefreshSettings();
     }
 }
 
@@ -792,9 +790,12 @@ void FFMODStudioEditorModule::ValidateFMOD()
                     if (FMessageDialog::Open(EAppMsgType::YesNo, Message) == EAppReturnType::Yes)
                     {
                         Settings.Locales = StudioLocales;
-                        Settings.Locales[0].bDefault = true;
+                        if (Settings.Locales.Num() > 0)
+                        {
+                            Settings.Locales[0].bDefault = true;
+                        }
                         SettingsSection->Save();
-                        IFMODStudioModule::Get().RefreshSettings();
+                        IFMODStudioModule::Get().ReloadBanks();
                     }
                 }
             }
@@ -1110,6 +1111,7 @@ void FFMODStudioEditorModule::BeginPIE(bool simulating)
 
 void FFMODStudioEditorModule::EndPIE(bool simulating)
 {
+    IFMODStudioModule::Get().PreEndPIE();
     UE_LOG(LogFMOD, Verbose, TEXT("FFMODStudioEditorModule EndPIE: %d"), simulating);
     bSimulating = false;
     bIsInPIE = false;
